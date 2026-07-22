@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Entrar — Club de Lectura</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,500&family=Caveat:wght@500;600&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<script type="module" src="js/aplicar-tema.js"></script>
+<style>
+  .auth-wrap{ max-width: 420px; margin: 90px auto; padding: 0 24px; }
+  .auth-card{ background:#FBF9F4; border:1px solid var(--line); border-radius:4px; padding: 36px 30px; }
+  .tabs{ display:flex; gap: 18px; margin-bottom: 24px; border-bottom: 1px solid var(--line); }
+  .tab{ padding-bottom: 10px; font-weight:600; color: var(--ink-soft); cursor:pointer; border-bottom: 2px solid transparent; }
+  .tab.active{ color: var(--ink); border-color: var(--pencil); }
+  form{ display:none; flex-direction:column; gap: 14px; }
+  form.active{ display:flex; }
+  label{ font-size: 0.85rem; color: var(--ink-soft); }
+  input{
+    padding: 11px 12px; border: 1.5px solid var(--line); border-radius: 3px;
+    font-family: var(--body); font-size: 0.95rem; background: var(--paper);
+  }
+  input:focus{ outline: none; border-color: var(--pencil); }
+  .msg{ font-size: 0.85rem; margin-top: 6px; min-height: 1.2em; }
+  .msg.error{ color: var(--pencil); }
+  .msg.ok{ color: var(--moss); }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a href="index.html" class="brand">
+      <span class="brand-mark">§</span>
+      <span class="brand-name">Club de Lectura</span>
+    </a>
+  </div>
+</header>
+
+<div class="auth-wrap">
+  <p class="eyebrow">Bienvenido de nuevo</p>
+  <h2 style="margin-bottom:22px;">Entra al club</h2>
+
+  <div class="auth-card">
+    <button type="button" id="btn-google" class="btn btn-ghost" style="width:100%; margin-bottom:20px; margin-left:0;">
+      Continuar con Google
+    </button>
+    <p class="msg" id="google-msg"></p>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="login">Ya tengo cuenta</div>
+      <div class="tab" data-tab="registro">Soy nuevo</div>
+    </div>
+
+    <form id="form-login" class="active">
+      <div>
+        <label for="login-email">Correo</label>
+        <input id="login-email" type="email" required>
+      </div>
+      <div>
+        <label for="login-pass">Contraseña</label>
+        <input id="login-pass" type="password" required>
+      </div>
+      <button type="submit" class="btn btn-primary">Entrar</button>
+      <p style="margin-top:10px;"><a href="#" id="link-olvide" style="font-size:0.85rem; color:var(--ink-soft);">¿Olvidaste tu contraseña?</a></p>
+      <p class="msg" id="login-msg"></p>
+    </form>
+
+    <form id="form-registro">
+      <div>
+        <label for="reg-nombre">Nombre</label>
+        <input id="reg-nombre" type="text" required>
+      </div>
+      <div>
+        <label for="reg-email">Correo</label>
+        <input id="reg-email" type="email" required>
+      </div>
+      <div>
+        <label for="reg-pass">Contraseña</label>
+        <input id="reg-pass" type="password" required minlength="6">
+      </div>
+      <button type="submit" class="btn btn-primary">Crear mi cuenta</button>
+      <p class="msg" id="reg-msg"></p>
+    </form>
+  </div>
+</div>
+
+<script type="module">
+  import { registrarLector, iniciarSesion, iniciarSesionConGoogle, recuperarContrasena, observarSesion } from "./js/auth.js";
+
+  document.getElementById("link-olvide").addEventListener("click", async (e) => {
+    e.preventDefault();
+    const email = document.getElementById("login-email").value.trim();
+    const msg = document.getElementById("login-msg");
+    msg.className = "msg";
+    if (!email) {
+      msg.textContent = "Escribe tu correo arriba primero, y vuelve a hacer clic aquí.";
+      msg.classList.add("error");
+      return;
+    }
+    try {
+      await recuperarContrasena(email);
+      msg.textContent = "Te enviamos un correo con instrucciones para restablecer tu contraseña.";
+      msg.classList.add("ok");
+    } catch (err) {
+      msg.textContent = "No pudimos enviar el correo. Revisa que esté bien escrito.";
+      msg.classList.add("error");
+    }
+  });
+
+  document.getElementById("btn-google").addEventListener("click", async () => {
+    const msg = document.getElementById("google-msg");
+    msg.textContent = ""; msg.className = "msg";
+    procesando = true;
+    try {
+      await iniciarSesionConGoogle();
+      yaRedirigido = true;
+      window.location.href = "index.html";
+    } catch (err) {
+      procesando = false;
+      msg.textContent = "No pudimos iniciar sesión con Google. Intenta de nuevo.";
+      msg.classList.add("error");
+    }
+  });
+
+  // Cambio de pestañas
+  document.querySelectorAll(".tab").forEach(tab => {
+    tab.addEventListener("click", () => {
+      document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll("form").forEach(f => f.classList.remove("active"));
+      tab.classList.add("active");
+      document.getElementById(`form-${tab.dataset.tab}`).classList.add("active");
+    });
+  });
+
+  // Si ya había una sesión activa al cargar la página, redirige de una vez.
+  // Se bloquea mientras un registro/login está en curso, para no cortar
+  // a medias la escritura del perfil en Firestore.
+  let procesando = false;
+  let yaRedirigido = false;
+  observarSesion((user) => {
+    if (user && !yaRedirigido && !procesando) {
+      yaRedirigido = true;
+      window.location.href = "index.html";
+    }
+  });
+
+  document.getElementById("form-login").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById("login-msg");
+    msg.textContent = ""; msg.className = "msg";
+    procesando = true;
+    try {
+      await iniciarSesion({
+        email: document.getElementById("login-email").value,
+        password: document.getElementById("login-pass").value,
+      });
+      yaRedirigido = true;
+      window.location.href = "index.html";
+    } catch (err) {
+      procesando = false;
+      msg.textContent = "No pudimos iniciar tu sesión. Revisa tu correo y contraseña.";
+      msg.classList.add("error");
+    }
+  });
+
+  document.getElementById("form-registro").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById("reg-msg");
+    msg.textContent = ""; msg.className = "msg";
+    procesando = true;
+    try {
+      await registrarLector({
+        nombre: document.getElementById("reg-nombre").value,
+        email: document.getElementById("reg-email").value,
+        password: document.getElementById("reg-pass").value,
+      });
+      yaRedirigido = true;
+      window.location.href = "index.html";
+    } catch (err) {
+      procesando = false;
+      msg.textContent = "No pudimos crear tu cuenta. Verifica el correo o intenta con otra contraseña.";
+      msg.classList.add("error");
+    }
+  });
+</script>
+
+</body>
+</html>

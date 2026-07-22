@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Club de Lectura — Un mismo libro, muchas orillas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,500&family=Caveat:wght@500;600&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<script type="module" src="js/aplicar-tema.js"></script>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a href="index.html" class="brand">
+      <span class="brand-mark">§</span>
+      <span class="brand-name">Club de Lectura</span>
+    </a>
+    <nav class="main-nav">
+      <a href="#libro-actual">Libro actual</a>
+      <a href="#comunidad">Comunidad</a>
+      <a href="#calendario">Calendario</a>
+      <a href="#archivo">Archivo</a>
+      <a href="#encuentro" class="nav-cta">Próximo encuentro</a>
+      <a href="admin.html" title="Panel de administración" style="opacity:0.55;">⚙</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <!-- HERO: libro abierto -->
+  <section class="hero" id="libro-actual">
+    <div class="wrap hero-grid">
+
+      <div class="hero-intro">
+        <p class="eyebrow">Un club sin tema fijo, sin una sola orilla</p>
+        <h1 id="t-hero-titulo">Se lee de a un libro.<br>Se conversa desde muchas partes.</h1>
+        <p class="hero-sub" id="t-hero-sub">Cada mes alguien del club elige qué leemos. Cada semana nos encontramos —en el margen del texto, o en videollamada— para no leer solos aunque estemos lejos.</p>
+        <div class="hero-actions">
+          <a href="auth.html" class="btn btn-primary">Quiero unirme</a>
+          <a href="#comunidad" class="btn btn-ghost">Cómo funciona</a>
+        </div>
+      </div>
+
+      <!-- Se muestra cuando SÍ hay un libro marcado como "actual" en el panel -->
+      <div class="book-spread" id="spread-con-libro" aria-label="Libro que se está leyendo este mes" style="display:none;">
+        <div class="page page-left">
+          <div class="cover-frame" id="d-cover-frame">
+            <div class="cover-placeholder" id="d-cover-placeholder">
+              <span class="cover-title" id="d-titulo"></span>
+              <span class="cover-author" id="d-autor"></span>
+            </div>
+          </div>
+          <p class="curator-note" id="d-curador"></p>
+        </div>
+        <div class="spine"></div>
+        <div class="page page-right">
+          <p class="page-label">Capítulo en curso</p>
+          <h3 id="d-capitulo"></h3>
+          <div class="progress-track" role="img" aria-label="Progreso de lectura del mes">
+            <div class="progress-fill" id="d-progreso" style="width:0%"></div>
+          </div>
+          <p class="page-meta" id="d-meta"></p>
+          <a href="capitulo.html" class="thread-link">Entrar a la discusión del capítulo →</a>
+        </div>
+      </div>
+
+      <!-- Se muestra cuando NO hay ningún libro marcado como "actual" todavía -->
+      <div class="book-spread" id="spread-sin-libro" aria-label="Sin libro activo" style="display:flex; align-items:center; justify-content:center; text-align:center; padding: 40px;">
+        <div>
+          <p style="font-family:var(--hand); font-size:1.4rem; color:var(--pencil); margin-bottom:10px;">todavía no hay nada aquí</p>
+          <h3 style="margin-bottom:14px;">Aún no se ha marcado ningún libro como "actual"</h3>
+          <p class="hero-sub" style="margin:0 auto 20px;">Ve al panel de administración → pestaña "Libros" → agrega uno y márcalo como actual.</p>
+          <a href="admin.html" class="btn btn-primary">Ir al panel de administración</a>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- CÓMO FUNCIONA / COMUNIDAD -->
+  <section class="how" id="comunidad">
+    <div class="wrap">
+      <p class="eyebrow">Cómo se sostiene el club a la distancia</p>
+      <h2>Tres cosas ocurren siempre, sin importar dónde estés</h2>
+
+      <div class="how-grid">
+        <article class="how-card">
+          <span class="how-mark">turno</span>
+          <h3 id="t-como1-titulo">Alguien elige</h3>
+          <p id="t-como1-texto">Cada mes le toca el turno a un lector distinto. Elige el libro, escribe por qué lo eligió, y ese porqué queda anotado junto a la portada.</p>
+        </article>
+        <article class="how-card">
+          <span class="how-mark">margen</span>
+          <h3 id="t-como2-titulo">Se comenta en el margen</h3>
+          <p id="t-como2-texto">Cada capítulo tiene su propio hilo. Escribes cuando puedes —de madrugada, entre clases, un domingo— y tu nota queda ahí, como en un libro prestado.</p>
+        </article>
+        <article class="how-card">
+          <span class="how-mark">encuentro</span>
+          <h3 id="t-como3-titulo">Nos vemos igual</h3>
+          <p id="t-como3-texto">Cada una o dos semanas, videollamada dentro del sitio. No hace falta salir a otra app: se entra y ya estamos todos ahí.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ENCUENTRO embebido -->
+  <section class="calendar-preview" id="encuentro">
+    <div class="wrap">
+      <p class="eyebrow">En vivo</p>
+      <h2 id="enc-titulo">Próximo encuentro</h2>
+      <p class="hero-sub" id="enc-fecha-texto">Todavía no se ha programado el próximo encuentro.</p>
+      <div id="enc-embed" style="display:none; margin-top:24px; border:1px solid var(--line); border-radius:4px; overflow:hidden;">
+        <iframe id="enc-iframe" style="width:100%; height:480px; border:none;" allow="camera; microphone; fullscreen; display-capture"></iframe>
+      </div>
+    </div>
+  </section>
+
+  <!-- CALENDARIO preview -->
+  <section class="calendar-preview" id="calendario">
+    <div class="wrap cal-grid">
+      <div>
+        <p class="eyebrow">Lo que viene</p>
+        <h2>El ritmo del mes</h2>
+        <p class="hero-sub">Un libro, cuatro semanas, un encuentro en vivo. Así, siempre.</p>
+      </div>
+      <ul class="cal-list" id="lista-cal">
+        <li class="hint" style="padding:16px 0; color:var(--ink-soft);">Sin eventos todavía — agrégalos desde el panel de administración.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ARCHIVO preview -->
+  <section class="archive-preview" id="archivo">
+    <div class="wrap">
+      <p class="eyebrow">Lo ya leído no se pierde</p>
+      <h2>Archivo del club</h2>
+      <div class="archive-grid" id="lista-archivo">
+        <p class="hint" style="color:var(--ink-soft); grid-column: 1/-1;">Todavía no hay libros archivados — el primero que marques como "actual" y luego reemplaces quedará aquí.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ENCUENTRO / CTA final -->
+  <section class="join-cta" id="unirme">
+    <div class="wrap">
+      <h2 id="t-cta-titulo">No importa desde dónde leas.</h2>
+      <p id="t-cta-texto">Suaita, Bucaramanga, o al otro lado del país — el club se sostiene en el margen que todos escribimos juntos.</p>
+      <a href="auth.html" class="btn btn-primary btn-lg">Crear mi cuenta de lector</a>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap footer-inner">
+    <span>Club de Lectura · un libro, muchas orillas</span>
+    <span class="footer-mark">§</span>
+  </div>
+</footer>
+
+<script type="module">
+  import { observarLibroActual, observarLibros } from "./js/libros.js";
+  import { observarEventos, observarProximoEncuentro } from "./js/eventos.js";
+  import { observarTextos } from "./js/textos.js";
+
+  function escaparHTML(str) {
+    const div = document.createElement("div");
+    div.textContent = str ?? "";
+    return div.innerHTML;
+  }
+
+  // ----- Libro actual (portada) -----
+  observarLibroActual((libro) => {
+    const conLibro = document.getElementById("spread-con-libro");
+    const sinLibro = document.getElementById("spread-sin-libro");
+
+    if (!libro) {
+      conLibro.style.display = "none";
+      sinLibro.style.display = "flex";
+      return;
+    }
+    sinLibro.style.display = "none";
+    conLibro.style.display = "grid";
+
+    document.getElementById("d-titulo").textContent = libro.titulo || "";
+    document.getElementById("d-autor").textContent = libro.autor || "";
+    document.getElementById("d-curador").innerHTML =
+      `elegido por <strong>${escaparHTML(libro.curador_nombre || "")}</strong>${libro.curador_lugar ? `, desde ${escaparHTML(libro.curador_lugar)}` : ""}`;
+    document.getElementById("d-capitulo").textContent =
+      `${libro.capitulo_numero || ""} · ${libro.capitulo_titulo || ""}`;
+    document.getElementById("d-progreso").style.width = `${libro.progreso || 0}%`;
+    document.getElementById("d-meta").innerHTML =
+      `${libro.semana || ""}${libro.semana && libro.fecha_cierre ? " · cierre de capítulo el " : ""}${libro.fecha_cierre ? `<strong>${escaparHTML(libro.fecha_cierre)}</strong>` : ""}`;
+
+    // Si hay una URL de portada, se reemplaza la caja de color por la imagen real
+    if (libro.imagen_url) {
+      document.getElementById("d-cover-frame").innerHTML =
+        `<img src="${escaparHTML(libro.imagen_url)}" alt="Portada de ${escaparHTML(libro.titulo || '')}" style="width:100%; height:100%; object-fit:cover; border-radius:2px;">`;
+    } else {
+      document.getElementById("d-cover-frame").innerHTML =
+        `<div class="cover-placeholder"><span class="cover-title">${escaparHTML(libro.titulo || '')}</span><span class="cover-author">${escaparHTML(libro.autor || '')}</span></div>`;
+    }
+  });
+
+  // ----- Archivo de libros -----
+  observarLibros((libros) => {
+    const archivados = libros.filter(l => l.estado !== "actual");
+    const cont = document.getElementById("lista-archivo");
+    if (archivados.length === 0) {
+      cont.innerHTML = '<p class="hint" style="color:var(--ink-soft); grid-column: 1/-1;">Todavía no hay libros archivados.</p>';
+      return;
+    }
+    cont.innerHTML = archivados.map(l => `
+      <div class="archive-item">
+        <span class="archive-title">${escaparHTML(l.titulo)}</span>
+        <span class="archive-curator">elegido por ${escaparHTML(l.curador_nombre || "")}</span>
+      </div>
+    `).join("");
+  });
+
+  // ----- Calendario -----
+  observarEventos((eventos) => {
+    const cont = document.getElementById("lista-cal");
+    if (eventos.length === 0) {
+      cont.innerHTML = '<li class="hint" style="padding:16px 0; color:var(--ink-soft);">Sin eventos todavía.</li>';
+      return;
+    }
+    cont.innerHTML = eventos.map(ev => `
+      <li><span class="cal-date">${escaparHTML(ev.fecha)}</span><span class="cal-event">${escaparHTML(ev.texto)}</span></li>
+    `).join("");
+  });
+
+  // ----- Encuentro embebido (Jitsi Meet) -----
+  observarProximoEncuentro((enc) => {
+    if (!enc || !enc.sala) return;
+    document.getElementById("enc-fecha-texto").textContent =
+      enc.fecha ? `${enc.fecha} · se abre la sala aquí mismo cuando empiece.` : "Se abre la sala aquí mismo cuando empiece.";
+    const iframe = document.getElementById("enc-iframe");
+    iframe.src = `https://meet.jit.si/${encodeURIComponent(enc.sala)}`;
+    document.getElementById("enc-embed").style.display = "block";
+  });
+
+  // ----- Textos editables -----
+  observarTextos((t) => {
+    if (!t) return;
+    if (t.hero_titulo) document.getElementById("t-hero-titulo").innerHTML = escaparHTML(t.hero_titulo).replace(/\n/g, "<br>");
+    if (t.hero_subtitulo) document.getElementById("t-hero-sub").textContent = t.hero_subtitulo;
+    if (t.como1_titulo) document.getElementById("t-como1-titulo").textContent = t.como1_titulo;
+    if (t.como1_texto) document.getElementById("t-como1-texto").textContent = t.como1_texto;
+    if (t.como2_titulo) document.getElementById("t-como2-titulo").textContent = t.como2_titulo;
+    if (t.como2_texto) document.getElementById("t-como2-texto").textContent = t.como2_texto;
+    if (t.como3_titulo) document.getElementById("t-como3-titulo").textContent = t.como3_titulo;
+    if (t.como3_texto) document.getElementById("t-como3-texto").textContent = t.como3_texto;
+    if (t.cta_titulo) document.getElementById("t-cta-titulo").textContent = t.cta_titulo;
+    if (t.cta_texto) document.getElementById("t-cta-texto").textContent = t.cta_texto;
+  });
+</script>
+
+</body>
+</html>

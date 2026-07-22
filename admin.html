@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel de administración — Club de Lectura</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,500&family=Caveat:wght@500;600&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<script type="module" src="js/aplicar-tema.js"></script>
+<style>
+  .admin-wrap{ max-width: 720px; margin: 0 auto; padding: 50px 24px 90px; }
+  .admin-card{ background:#FBF9F4; border:1px solid var(--line); border-radius:4px; padding: 30px; margin-bottom: 26px; }
+  .admin-card h3{ margin-bottom: 4px; }
+  .admin-card .hint{ font-size: 0.85rem; color: var(--ink-soft); margin-bottom: 20px; }
+  .campo{ margin-bottom: 16px; }
+  .campo label{ display:block; font-size: 0.85rem; color: var(--ink-soft); margin-bottom: 5px; }
+  .campo input, .campo textarea{
+    width:100%; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 3px;
+    font-family: var(--body); font-size: 0.95rem; background: var(--paper);
+  }
+  .campo textarea{ min-height: 70px; resize: vertical; }
+  .campo input:focus, .campo textarea:focus{ outline:none; border-color: var(--pencil); }
+  .fila-doble{ display:grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .fila-triple{ display:grid; grid-template-columns: 1fr 1fr auto; gap: 14px; align-items:end; }
+  .estado{ font-size: 0.88rem; margin-top: 12px; min-height: 1.2em; }
+  .estado.ok{ color: var(--moss); }
+  .estado.error{ color: var(--pencil); }
+  .bloqueo{ text-align:center; padding: 80px 24px; color: var(--ink-soft); }
+
+  .tabs-admin{ display:flex; gap: 8px; margin-bottom: 28px; flex-wrap: wrap; }
+  .tab-admin{
+    padding: 8px 16px; border: 1.5px solid var(--line); border-radius: 20px;
+    font-size: 0.88rem; cursor:pointer; color: var(--ink-soft);
+  }
+  .tab-admin.active{ border-color: var(--ink); color: var(--ink); background: var(--paper-dim); font-weight:600; }
+  .panel-tab{ display:none; }
+  .panel-tab.active{ display:block; }
+
+  .lista-item{
+    display:flex; justify-content:space-between; align-items:center;
+    padding: 12px 0; border-bottom: 1px solid var(--line); gap: 12px;
+  }
+  .lista-item:last-child{ border-bottom:none; }
+  .lista-item-info strong{ font-family: var(--display); }
+  .lista-item-sub{ font-size: 0.8rem; color: var(--ink-soft); }
+  .badge{ font-size: 0.72rem; padding: 3px 9px; border-radius: 20px; background: var(--paper-dim); color: var(--ink-soft); }
+  .badge.actual{ background: var(--moss); color: var(--paper); }
+  .btn-sm{ padding: 6px 12px; font-size: 0.82rem; }
+  select{
+    padding: 7px 10px; border: 1.5px solid var(--line); border-radius: 3px;
+    font-family: var(--body); font-size: 0.85rem; background: var(--paper);
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a href="index.html" class="brand">
+      <span class="brand-mark">§</span>
+      <span class="brand-name">Club de Lectura</span>
+    </a>
+    <nav class="main-nav">
+      <a href="index.html">Ver sitio</a>
+    </nav>
+  </div>
+</header>
+
+<div id="zona-bloqueo" class="bloqueo" style="display:none;">
+  <p>Esta sección es solo para moderadores y administradores del club.</p>
+  <a href="auth.html" class="btn btn-primary">Iniciar sesión</a>
+</div>
+
+<div id="zona-admin" class="admin-wrap" style="display:none;">
+  <p class="eyebrow">Panel de administración</p>
+  <h2 style="margin-bottom: 22px;">Gestionar el club</h2>
+
+  <div class="tabs-admin">
+    <div class="tab-admin active" data-tab="libros">Libros</div>
+    <div class="tab-admin" data-tab="calendario">Calendario y encuentro</div>
+    <div class="tab-admin" data-tab="miembros" id="tab-miembros" style="display:none;">Miembros</div>
+    <div class="tab-admin" data-tab="apariencia">Apariencia</div>
+    <div class="tab-admin" data-tab="textos">Textos</div>
+  </div>
+
+  <!-- ===== LIBROS ===== -->
+  <div class="panel-tab active" id="panel-libros">
+
+    <div class="admin-card">
+      <h3>Agregar libro nuevo</h3>
+      <p class="hint">Se guarda en el archivo. Después lo marcas como "actual" cuando le toque su turno.</p>
+      <form id="form-nuevo-libro">
+        <div class="fila-doble">
+          <div class="campo"><label>Título</label><input id="nl-titulo" required></div>
+          <div class="campo"><label>Autor</label><input id="nl-autor" required></div>
+        </div>
+        <div class="fila-doble">
+          <div class="campo"><label>Curador (quién lo eligió)</label><input id="nl-curador-nombre" required></div>
+          <div class="campo"><label>Su ciudad / lugar</label><input id="nl-curador-lugar"></div>
+        </div>
+        <div class="campo">
+          <label>URL de la portada (opcional — pega el enlace de una imagen ya subida a Drive, Imgur, etc.)</label>
+          <input id="nl-imagen" placeholder="https://...">
+        </div>
+        <div class="fila-doble">
+          <div class="campo"><label>Nº de capítulo actual</label><input id="nl-cap-num" required></div>
+          <div class="campo"><label>Título del capítulo</label><input id="nl-cap-titulo" required></div>
+        </div>
+        <div class="fila-doble">
+          <div class="campo"><label>Progreso del mes (%)</label><input id="nl-progreso" type="number" min="0" max="100" required></div>
+          <div class="campo"><label>Fecha de cierre del capítulo</label><input id="nl-fecha-cierre" placeholder="ej. 28 jul"></div>
+        </div>
+        <div class="campo"><label>Semana (ej. "Semana 2 de 4")</label><input id="nl-semana"></div>
+        <button type="submit" class="btn btn-primary">Agregar al archivo</button>
+        <p class="estado" id="estado-nuevo-libro"></p>
+      </form>
+    </div>
+
+    <div class="admin-card">
+      <h3>Archivo de libros</h3>
+      <p class="hint">El que tenga la etiqueta "actual" es el que se muestra en la portada del sitio.</p>
+      <div id="lista-libros"><p class="hint">Cargando…</p></div>
+    </div>
+
+    <div class="admin-card">
+      <h3>Cola de turnos de curadores</h3>
+      <p class="hint">El primero de la lista es a quién le toca elegir el próximo libro.</p>
+      <div id="lista-cola"><p class="hint">Cargando…</p></div>
+    </div>
+  </div>
+
+  <!-- ===== CALENDARIO ===== -->
+  <div class="panel-tab" id="panel-calendario">
+
+    <div class="admin-card">
+      <h3>Próximo encuentro (videollamada)</h3>
+      <p class="hint">El nombre de sala puede ser cualquier palabra única — así queda la videollamada embebida en el sitio, vía Jitsi Meet.</p>
+      <form id="form-encuentro">
+        <div class="fila-doble">
+          <div class="campo"><label>Fecha (texto libre)</label><input id="enc-fecha" placeholder="ej. 24 jul, 7:00 p.m."></div>
+          <div class="campo"><label>Nombre de la sala</label><input id="enc-sala" placeholder="ej. club-lectura-vadoreal"></div>
+        </div>
+        <button type="submit" class="btn btn-primary">Guardar encuentro</button>
+        <p class="estado" id="estado-encuentro"></p>
+      </form>
+    </div>
+
+    <div class="admin-card">
+      <h3>Agregar evento al calendario</h3>
+      <form id="form-evento">
+        <div class="fila-triple">
+          <div class="campo"><label>Fecha</label><input id="ev-fecha" placeholder="ej. 28 jul" required></div>
+          <div class="campo"><label>Descripción</label><input id="ev-texto" placeholder="ej. Cierre de discusión · cap. 3" required></div>
+          <button type="submit" class="btn btn-primary btn-sm">Agregar</button>
+        </div>
+      </form>
+      <div id="lista-eventos" style="margin-top:14px;"></div>
+    </div>
+  </div>
+
+  <!-- ===== MIEMBROS ===== -->
+  <div class="panel-tab" id="panel-miembros">
+    <div class="admin-card">
+      <h3>Miembros del club</h3>
+      <p class="hint">Solo un administrador puede ascender o cambiar roles.</p>
+      <div id="lista-usuarios"><p class="hint">Cargando…</p></div>
+    </div>
+  </div>
+
+  <!-- ===== APARIENCIA ===== -->
+  <div class="panel-tab" id="panel-apariencia">
+    <div class="admin-card">
+      <h3>Colores y tipografía</h3>
+      <p class="hint">Se aplica a todo el sitio al instante. Elige entre combinaciones ya probadas, para que todo se siga viendo bien.</p>
+      <form id="form-apariencia">
+        <div class="campo">
+          <label>Paleta de color</label>
+          <div id="opciones-paleta" style="display:flex; flex-direction:column; gap:10px;"></div>
+        </div>
+        <div class="campo" style="margin-top:20px;">
+          <label>Tipografía</label>
+          <div id="opciones-fuente" style="display:flex; flex-direction:column; gap:10px;"></div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="margin-top:10px;">Aplicar apariencia</button>
+        <p class="estado" id="estado-apariencia"></p>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== TEXTOS ===== -->
+  <div class="panel-tab" id="panel-textos">
+    <div class="admin-card">
+      <h3>Textos de la portada</h3>
+      <p class="hint">Deja un campo vacío si quieres que se quede el texto que ya tiene.</p>
+      <form id="form-textos">
+        <div class="campo">
+          <label>Título principal (usa un salto de línea donde quieras el corte)</label>
+          <textarea id="tx-hero-titulo"></textarea>
+        </div>
+        <div class="campo">
+          <label>Subtítulo del hero</label>
+          <textarea id="tx-hero-sub"></textarea>
+        </div>
+        <hr style="border:none; border-top:1px solid var(--line); margin: 22px 0;">
+        <div class="campo"><label>"Cómo funciona" — tarjeta 1: título</label><input id="tx-como1-titulo"></div>
+        <div class="campo"><label>Tarjeta 1: texto</label><textarea id="tx-como1-texto"></textarea></div>
+        <div class="campo"><label>Tarjeta 2: título</label><input id="tx-como2-titulo"></div>
+        <div class="campo"><label>Tarjeta 2: texto</label><textarea id="tx-como2-texto"></textarea></div>
+        <div class="campo"><label>Tarjeta 3: título</label><input id="tx-como3-titulo"></div>
+        <div class="campo"><label>Tarjeta 3: texto</label><textarea id="tx-como3-texto"></textarea></div>
+        <hr style="border:none; border-top:1px solid var(--line); margin: 22px 0;">
+        <div class="campo"><label>Título de cierre (CTA)</label><input id="tx-cta-titulo"></div>
+        <div class="campo"><label>Texto de cierre (CTA)</label><textarea id="tx-cta-texto"></textarea></div>
+        <button type="submit" class="btn btn-primary">Guardar textos</button>
+        <p class="estado" id="estado-textos"></p>
+      </form>
+    </div>
+  </div>
+
+</div>
+
+<script type="module">
+  import { observarSesion, obtenerPerfil } from "./js/auth.js";
+  import { observarLibros, crearLibro, marcarComoActual, eliminarLibro } from "./js/libros.js";
+  import { observarEventos, crearEvento, eliminarEvento, observarProximoEncuentro, guardarProximoEncuentro } from "./js/eventos.js";
+  import { observarUsuarios, cambiarRol } from "./js/usuarios-admin.js";
+  import { observarApariencia, guardarApariencia, PALETAS, FUENTES } from "./js/apariencia.js";
+  import { observarTextos, guardarTextos, TEXTOS_POR_DEFECTO } from "./js/textos.js";
+  import { observarColaIds, avanzarTurno, quitarDeCola } from "./js/cola-curadores.js";
+
+  let miPerfil = null;
+  let miUid = null;
+
+  // ----- Pestañas -----
+  document.querySelectorAll(".tab-admin").forEach(tab => {
+    tab.addEventListener("click", () => {
+      document.querySelectorAll(".tab-admin").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".panel-tab").forEach(p => p.classList.remove("active"));
+      tab.classList.add("active");
+      document.getElementById(`panel-${tab.dataset.tab}`).classList.add("active");
+    });
+  });
+
+  function escaparHTML(str) {
+    const div = document.createElement("div");
+    div.textContent = str ?? "";
+    return div.innerHTML;
+  }
+
+  // ----- Sesión y permisos -----
+  observarSesion(async (user) => {
+    const bloqueo = document.getElementById("zona-bloqueo");
+    const admin = document.getElementById("zona-admin");
+
+    if (!user) {
+      bloqueo.style.display = "block";
+      admin.style.display = "none";
+      return;
+    }
+
+    miUid = user.uid;
+    miPerfil = await obtenerPerfil(user.uid);
+    const esAdminOMod = miPerfil && (miPerfil.rol === "admin" || miPerfil.rol === "moderador");
+
+    if (!esAdminOMod) {
+      bloqueo.style.display = "block";
+      bloqueo.querySelector("p").textContent = "Tu cuenta no tiene permisos de administración.";
+      bloqueo.querySelector("a").style.display = "none";
+      admin.style.display = "none";
+      return;
+    }
+
+    bloqueo.style.display = "none";
+    admin.style.display = "block";
+    if (miPerfil.rol === "admin") {
+      document.getElementById("tab-miembros").style.display = "inline-block";
+    }
+
+    iniciarLibros();
+    iniciarCola();
+    iniciarCalendario();
+    if (miPerfil.rol === "admin") iniciarMiembros();
+    iniciarApariencia();
+    iniciarTextos();
+  });
+
+  // ----- LIBROS -----
+  function iniciarLibros() {
+    observarLibros((libros) => {
+      const cont = document.getElementById("lista-libros");
+      if (libros.length === 0) {
+        cont.innerHTML = '<p class="hint">Todavía no hay libros en el archivo.</p>';
+        return;
+      }
+      cont.innerHTML = libros.map(l => `
+        <div class="lista-item">
+          <div class="lista-item-info">
+            <strong>${escaparHTML(l.titulo)}</strong> — ${escaparHTML(l.autor)}
+            <div class="lista-item-sub">elegido por ${escaparHTML(l.curador_nombre)}${l.curador_lugar ? `, ${escaparHTML(l.curador_lugar)}` : ""}</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="badge ${l.estado === 'actual' ? 'actual' : ''}">${l.estado === 'actual' ? 'actual' : 'archivado'}</span>
+            ${l.estado !== 'actual' ? `<button class="btn btn-ghost btn-sm" data-marcar="${l.id}">Marcar actual</button>` : ''}
+            <button class="btn btn-ghost btn-sm" data-eliminar="${l.id}">Eliminar</button>
+          </div>
+        </div>
+      `).join("");
+
+      cont.querySelectorAll("[data-marcar]").forEach(btn => {
+        btn.addEventListener("click", () => marcarComoActual(btn.dataset.marcar));
+      });
+      cont.querySelectorAll("[data-eliminar]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          if (confirm("¿Eliminar este libro del archivo?")) eliminarLibro(btn.dataset.eliminar);
+        });
+      });
+    });
+  }
+
+  document.getElementById("form-nuevo-libro").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const estado = document.getElementById("estado-nuevo-libro");
+    estado.textContent = ""; estado.className = "estado";
+    try {
+      await crearLibro({
+        titulo: document.getElementById("nl-titulo").value,
+        autor: document.getElementById("nl-autor").value,
+        curador_nombre: document.getElementById("nl-curador-nombre").value,
+        curador_lugar: document.getElementById("nl-curador-lugar").value,
+        imagen_url: document.getElementById("nl-imagen").value,
+        capitulo_numero: document.getElementById("nl-cap-num").value,
+        capitulo_titulo: document.getElementById("nl-cap-titulo").value,
+        progreso: Number(document.getElementById("nl-progreso").value),
+        fecha_cierre: document.getElementById("nl-fecha-cierre").value,
+        semana: document.getElementById("nl-semana").value,
+      });
+      estado.textContent = "Libro agregado al archivo.";
+      estado.classList.add("ok");
+      e.target.reset();
+    } catch (err) {
+      estado.textContent = "No se pudo guardar. Revisa tus permisos.";
+      estado.classList.add("error");
+    }
+  });
+
+  // ----- COLA DE CURADORES -----
+  function iniciarCola() {
+    observarColaIds(async (ids) => {
+      const cont = document.getElementById("lista-cola");
+      if (ids.length === 0) {
+        cont.innerHTML = '<p class="hint">La cola está vacía.</p>';
+        return;
+      }
+      const perfiles = await Promise.all(ids.map(id => obtenerPerfil(id)));
+      cont.innerHTML = ids.map((id, i) => `
+        <div class="lista-item">
+          <div class="lista-item-info">
+            <strong>${escaparHTML(perfiles[i]?.nombre || "(usuario sin perfil)")}</strong>
+            ${i === 0 ? '<span class="badge actual" style="margin-left:8px;">le toca ahora</span>' : ''}
+          </div>
+          <div style="display:flex; gap:8px;">
+            ${i === 0 ? `<button class="btn btn-ghost btn-sm" data-avanzar>Ya eligió → pasar al final</button>` : ''}
+            <button class="btn btn-ghost btn-sm" data-quitar="${id}">Quitar de la cola</button>
+          </div>
+        </div>
+      `).join("");
+
+      const btnAvanzar = cont.querySelector("[data-avanzar]");
+      if (btnAvanzar) btnAvanzar.addEventListener("click", () => avanzarTurno());
+      cont.querySelectorAll("[data-quitar]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          if (confirm("¿Quitar a esta persona de la cola de turnos?")) quitarDeCola(btn.dataset.quitar);
+        });
+      });
+    });
+  }
+
+  // ----- CALENDARIO / ENCUENTRO -----
+  function iniciarCalendario() {
+    observarProximoEncuentro((enc) => {
+      if (!enc) return;
+      document.getElementById("enc-fecha").value = enc.fecha || "";
+      document.getElementById("enc-sala").value = enc.sala || "";
+    });
+
+    observarEventos((eventos) => {
+      const cont = document.getElementById("lista-eventos");
+      if (eventos.length === 0) {
+        cont.innerHTML = '<p class="hint">Sin eventos todavía.</p>';
+        return;
+      }
+      cont.innerHTML = eventos.map(ev => `
+        <div class="lista-item">
+          <div class="lista-item-info"><strong>${escaparHTML(ev.fecha)}</strong> — ${escaparHTML(ev.texto)}</div>
+          <button class="btn btn-ghost btn-sm" data-eliminar-ev="${ev.id}">Quitar</button>
+        </div>
+      `).join("");
+      cont.querySelectorAll("[data-eliminar-ev]").forEach(btn => {
+        btn.addEventListener("click", () => eliminarEvento(btn.dataset.eliminarEv));
+      });
+    });
+  }
+
+  document.getElementById("form-encuentro").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const estado = document.getElementById("estado-encuentro");
+    estado.textContent = ""; estado.className = "estado";
+    try {
+      await guardarProximoEncuentro({
+        fecha: document.getElementById("enc-fecha").value,
+        sala: document.getElementById("enc-sala").value,
+      });
+      estado.textContent = "Guardado.";
+      estado.classList.add("ok");
+    } catch (err) {
+      estado.textContent = "No se pudo guardar.";
+      estado.classList.add("error");
+    }
+  });
+
+  document.getElementById("form-evento").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    await crearEvento({
+      fecha: document.getElementById("ev-fecha").value,
+      texto: document.getElementById("ev-texto").value,
+    });
+    e.target.reset();
+  });
+
+  // ----- MIEMBROS -----
+  function iniciarMiembros() {
+    observarUsuarios((usuarios) => {
+      const cont = document.getElementById("lista-usuarios");
+      cont.innerHTML = usuarios.map(u => `
+        <div class="lista-item">
+          <div class="lista-item-info">
+            <strong>${escaparHTML(u.nombre)}</strong>
+            <div class="lista-item-sub">${escaparHTML(u.email)}</div>
+          </div>
+          <select data-cambiar-rol="${u.id}" ${u.id === miUid ? "disabled title='No puedes cambiar tu propio rol'" : ""}>
+            <option value="miembro" ${u.rol === "miembro" ? "selected" : ""}>miembro</option>
+            <option value="moderador" ${u.rol === "moderador" ? "selected" : ""}>moderador</option>
+            <option value="admin" ${u.rol === "admin" ? "selected" : ""}>admin</option>
+          </select>
+        </div>
+      `).join("");
+
+      cont.querySelectorAll("[data-cambiar-rol]").forEach(sel => {
+        sel.addEventListener("change", () => cambiarRol(sel.dataset.cambiarRol, sel.value));
+      });
+    });
+  }
+
+  // ----- APARIENCIA -----
+  function iniciarApariencia() {
+    const contPaleta = document.getElementById("opciones-paleta");
+    const contFuente = document.getElementById("opciones-fuente");
+
+    contPaleta.innerHTML = Object.entries(PALETAS).map(([id, p]) => `
+      <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+        <input type="radio" name="paleta" value="${id}">
+        <span style="display:flex; gap:4px;">
+          <span style="width:16px;height:16px;border-radius:50%;background:${p.paper};border:1px solid var(--line);display:inline-block;"></span>
+          <span style="width:16px;height:16px;border-radius:50%;background:${p.ink};display:inline-block;"></span>
+          <span style="width:16px;height:16px;border-radius:50%;background:${p.pencil};display:inline-block;"></span>
+          <span style="width:16px;height:16px;border-radius:50%;background:${p.moss};display:inline-block;"></span>
+        </span>
+        ${p.nombre}
+      </label>
+    `).join("");
+
+    contFuente.innerHTML = Object.entries(FUENTES).map(([id, f]) => `
+      <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+        <input type="radio" name="fuente" value="${id}">
+        ${f.nombre}
+      </label>
+    `).join("");
+
+    observarApariencia((datos) => {
+      const paletaId = datos?.paletaId || "margen";
+      const fuenteId = datos?.fuenteId || "fraunces";
+      const rp = contPaleta.querySelector(`input[value="${paletaId}"]`);
+      const rf = contFuente.querySelector(`input[value="${fuenteId}"]`);
+      if (rp) rp.checked = true;
+      if (rf) rf.checked = true;
+    });
+  }
+
+  document.getElementById("form-apariencia").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const estado = document.getElementById("estado-apariencia");
+    estado.textContent = ""; estado.className = "estado";
+    const paletaId = document.querySelector('input[name="paleta"]:checked')?.value;
+    const fuenteId = document.querySelector('input[name="fuente"]:checked')?.value;
+    if (!paletaId || !fuenteId) {
+      estado.textContent = "Elige una paleta y una tipografía.";
+      estado.classList.add("error");
+      return;
+    }
+    try {
+      await guardarApariencia({ paletaId, fuenteId });
+      estado.textContent = "Apariencia aplicada a todo el sitio.";
+      estado.classList.add("ok");
+    } catch (err) {
+      estado.textContent = "No se pudo guardar.";
+      estado.classList.add("error");
+    }
+  });
+
+  // ----- TEXTOS -----
+  const MAPA_TEXTOS = {
+    hero_titulo: "tx-hero-titulo",
+    hero_subtitulo: "tx-hero-sub",
+    como1_titulo: "tx-como1-titulo",
+    como1_texto: "tx-como1-texto",
+    como2_titulo: "tx-como2-titulo",
+    como2_texto: "tx-como2-texto",
+    como3_titulo: "tx-como3-titulo",
+    como3_texto: "tx-como3-texto",
+    cta_titulo: "tx-cta-titulo",
+    cta_texto: "tx-cta-texto",
+  };
+
+  function iniciarTextos() {
+    observarTextos((t) => {
+      const actuales = t || {};
+      Object.entries(MAPA_TEXTOS).forEach(([campo, id]) => {
+        document.getElementById(id).value = actuales[campo] || "";
+      });
+      // Placeholder con el texto por defecto, para que sepas qué se ve si dejas el campo vacío
+      Object.entries(MAPA_TEXTOS).forEach(([campo, id]) => {
+        document.getElementById(id).placeholder = TEXTOS_POR_DEFECTO[campo] || "";
+      });
+    });
+  }
+
+  document.getElementById("form-textos").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const estado = document.getElementById("estado-textos");
+    estado.textContent = ""; estado.className = "estado";
+    const datos = {};
+    Object.entries(MAPA_TEXTOS).forEach(([campo, id]) => {
+      const valor = document.getElementById(id).value.trim();
+      if (valor) datos[campo] = valor;
+    });
+    try {
+      await guardarTextos(datos);
+      estado.textContent = "Textos guardados. Ya se actualizaron en la portada.";
+      estado.classList.add("ok");
+    } catch (err) {
+      estado.textContent = "No se pudo guardar.";
+      estado.classList.add("error");
+    }
+  });
+</script>
+
+</body>
+</html>

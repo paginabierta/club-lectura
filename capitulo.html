@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cap. 3 · El jardín de senderos que se bifurcan — Club de Lectura</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,500&family=Caveat:wght@500;600&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<script type="module" src="js/aplicar-tema.js"></script>
+<style>
+  .thread-wrap{ max-width: 720px; margin: 0 auto; padding: 50px 24px 90px; }
+  .thread-head{ margin-bottom: 30px; }
+  .thread-head p{ color: var(--ink-soft); max-width: 60ch; }
+  .back-link{ font-size: 0.85rem; color: var(--ink-soft); display:inline-block; margin-bottom: 18px; }
+  .back-link:hover{ color: var(--pencil); }
+
+  #lista-mensajes{ display:flex; flex-direction:column; gap: 18px; margin: 34px 0; }
+  .mensaje{
+    background: #FBF9F4; border: 1px solid var(--line); border-radius: 4px;
+    padding: 16px 18px;
+  }
+  .mensaje-meta{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom: 6px; }
+  .mensaje-autor{ font-family: var(--display); font-weight:600; font-size: 0.95rem; color: var(--moss); }
+  .mensaje-fecha{ font-size: 0.75rem; color: var(--ink-soft); }
+  .mensaje-texto{ margin:0; font-size: 0.95rem; line-height: 1.5; white-space: pre-wrap; }
+  .vacio{ color: var(--ink-soft); font-style: italic; font-size: 0.9rem; }
+
+  .composer{ border-top: 1px solid var(--line); padding-top: 24px; }
+  .composer textarea{
+    width:100%; min-height: 90px; padding: 12px 14px; border: 1.5px solid var(--line);
+    border-radius: 3px; font-family: var(--body); font-size: 0.95rem; background: var(--paper);
+    resize: vertical;
+  }
+  .composer textarea:focus{ outline:none; border-color: var(--pencil); }
+  .composer-footer{ display:flex; justify-content: space-between; align-items:center; margin-top: 12px; }
+  .login-prompt{
+    background: var(--paper-dim); border: 1px dashed var(--line); border-radius: 4px;
+    padding: 18px; text-align:center; font-size: 0.92rem; color: var(--ink-soft);
+  }
+  .login-prompt a{ color: var(--pencil); font-weight:600; }
+  .composer-msg{ font-size: 0.85rem; color: var(--pencil); min-height: 1.2em; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a href="index.html" class="brand">
+      <span class="brand-mark">§</span>
+      <span class="brand-name">Club de Lectura</span>
+    </a>
+    <nav class="main-nav">
+      <a href="index.html">Inicio</a>
+      <span id="nav-usuario" style="color:var(--ink-soft); font-size:0.9rem;"></span>
+    </nav>
+  </div>
+</header>
+
+<div class="thread-wrap">
+  <a href="index.html#libro-actual" class="back-link">← Volver al libro actual</a>
+
+  <div class="thread-head">
+    <span class="eyebrow" id="th-libro">Cargando…</span>
+    <h2 id="th-capitulo"></h2>
+    <p>Comenta lo que quieras del capítulo: una idea suelta, una pregunta, una frase que te quedó rondando. No hay que esperar al encuentro en vivo para hablar de esto.</p>
+  </div>
+
+  <div id="lista-mensajes">
+    <p class="vacio">Cargando comentarios…</p>
+  </div>
+
+  <div class="composer">
+    <div id="zona-login" style="display:none;">
+      <div class="login-prompt">
+        Necesitas <a href="auth.html">iniciar sesión</a> para comentar en este capítulo.
+      </div>
+    </div>
+    <form id="form-comentario" style="display:none;">
+      <textarea id="input-comentario" placeholder="¿Qué te pareció este capítulo?" required></textarea>
+      <div class="composer-footer">
+        <span style="font-size:0.85rem; color:var(--ink-soft);">Comentando como <strong id="nombre-actual"></strong></span>
+        <button type="submit" class="btn btn-primary">Publicar</button>
+      </div>
+      <p class="composer-msg" id="composer-msg"></p>
+    </form>
+  </div>
+</div>
+
+<script type="module">
+  import { observarSesion, obtenerPerfil } from "./js/auth.js";
+  import { observarMensajes, publicarMensaje, borrarMensaje } from "./js/hilos.js";
+  import { observarLibroActual } from "./js/libros.js";
+
+  let perfilActual = null;
+  let miUid = null;
+  let puedeModerar = false;
+  let ultimosMensajes = [];
+  let hiloId = null;
+  let dejarDeEscuchar = null;
+
+  function formatearFecha(ts) {
+    if (!ts || !ts.toDate) return "enviando…";
+    return ts.toDate().toLocaleString("es-CO", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  }
+
+  function escaparHTML(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function renderMensajes(mensajes) {
+    ultimosMensajes = mensajes;
+    const cont = document.getElementById("lista-mensajes");
+    if (mensajes.length === 0) {
+      cont.innerHTML = '<p class="vacio">Todavía no hay comentarios en este capítulo. Sé el primero en anotar algo en el margen.</p>';
+      return;
+    }
+    cont.innerHTML = mensajes.map(m => {
+      const puedeBorrar = miUid && (m.autor_id === miUid || puedeModerar);
+      return `
+      <div class="mensaje">
+        <div class="mensaje-meta">
+          <span class="mensaje-autor">${escaparHTML(m.autor_nombre || "Lector")}</span>
+          <span style="display:flex; align-items:center; gap:10px;">
+            <span class="mensaje-fecha">${formatearFecha(m.fecha)}</span>
+            ${puedeBorrar ? `<button data-borrar="${m.id}" style="border:none; background:none; color:var(--pencil-soft); cursor:pointer; font-size:0.78rem;" title="Borrar comentario">borrar</button>` : ""}
+          </span>
+        </div>
+        <p class="mensaje-texto">${escaparHTML(m.contenido)}</p>
+      </div>
+    `;
+    }).join("");
+
+    cont.querySelectorAll("[data-borrar]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        if (!hiloId) return;
+        if (!confirm("¿Borrar este comentario?")) return;
+        try {
+          await borrarMensaje(hiloId, btn.dataset.borrar);
+        } catch (err) {
+          alert("No se pudo borrar el comentario.");
+        }
+      });
+    });
+  }
+
+  // El hilo de discusión sigue al libro actual: cada libro + capítulo
+  // tiene su propio ID de hilo, calculado a partir de esos datos.
+  observarLibroActual((libro) => {
+    if (!libro) {
+      document.getElementById("th-libro").textContent = "Todavía no hay un libro activo";
+      document.getElementById("th-capitulo").textContent = "Vuelve pronto";
+      return;
+    }
+    document.getElementById("th-libro").textContent = `${libro.titulo || ""} · ${libro.autor || ""}`;
+    document.getElementById("th-capitulo").textContent =
+      `Cap. ${libro.capitulo_numero || ""} — ${libro.capitulo_titulo || ""}`;
+
+    const nuevoHiloId = `${libro.id}-cap-${libro.capitulo_numero || "actual"}`;
+    if (nuevoHiloId !== hiloId) {
+      hiloId = nuevoHiloId;
+      if (dejarDeEscuchar) dejarDeEscuchar();
+      dejarDeEscuchar = observarMensajes(hiloId, renderMensajes);
+    }
+  });
+
+  observarSesion(async (user) => {
+    const zonaLogin = document.getElementById("zona-login");
+    const form = document.getElementById("form-comentario");
+    const navUsuario = document.getElementById("nav-usuario");
+
+    if (!user) {
+      zonaLogin.style.display = "block";
+      form.style.display = "none";
+      navUsuario.textContent = "";
+      miUid = null;
+      puedeModerar = false;
+      renderMensajes(ultimosMensajes);
+      return;
+    }
+
+    perfilActual = await obtenerPerfil(user.uid);
+    miUid = user.uid;
+    puedeModerar = perfilActual?.rol === "moderador" || perfilActual?.rol === "admin";
+    zonaLogin.style.display = "none";
+    form.style.display = "block";
+    document.getElementById("nombre-actual").textContent = perfilActual?.nombre || "Lector";
+    navUsuario.textContent = perfilActual?.nombre ? `Hola, ${perfilActual.nombre}` : "";
+    renderMensajes(ultimosMensajes);
+  });
+
+  document.getElementById("form-comentario").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!hiloId) return;
+    const textarea = document.getElementById("input-comentario");
+    const msg = document.getElementById("composer-msg");
+    const contenido = textarea.value.trim();
+    if (!contenido) return;
+
+    msg.textContent = "";
+    try {
+      await publicarMensaje(hiloId, contenido, perfilActual?.nombre);
+      textarea.value = "";
+    } catch (err) {
+      msg.textContent = "No se pudo publicar el comentario. Intenta de nuevo.";
+    }
+  });
+</script>
+
+</body>
+</html>

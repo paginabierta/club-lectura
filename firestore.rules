@@ -1,0 +1,87 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function estaAutenticado() {
+      return request.auth != null;
+    }
+    function esDueno(uid) {
+      return request.auth.uid == uid;
+    }
+    function rolDe(uid) {
+      return get(/databases/$(database)/documents/usuarios/$(uid)).data.rol;
+    }
+    function esModeradorOAdmin() {
+      return estaAutenticado() &&
+        (rolDe(request.auth.uid) == "moderador" || rolDe(request.auth.uid) == "admin");
+    }
+
+    // Perfiles: cualquiera autenticado puede leer perfiles públicos;
+    // solo el dueño (o un admin) puede editar el propio.
+    match /usuarios/{uid} {
+      allow read: if estaAutenticado();
+      allow create: if estaAutenticado() && esDueno(uid);
+      allow update: if estaAutenticado() && (esDueno(uid) || esModeradorOAdmin());
+      allow delete: if false;
+    }
+
+    // Libros: lectura pública para miembros; solo admin/moderador
+    // crea y edita (desde el panel de administración).
+    match /libros/{libroId} {
+      allow read: if estaAutenticado();
+      allow create, update, delete: if esModeradorOAdmin();
+    }
+
+    match /capitulos/{capId} {
+      allow read: if estaAutenticado();
+      allow write: if esModeradorOAdmin();
+    }
+
+    // Hilos y mensajes: cualquier miembro puede leer y publicar;
+    // solo el autor (o moderación) puede borrar/editar su mensaje.
+    match /hilos/{hiloId} {
+      allow read: if estaAutenticado();
+      allow write: if esModeradorOAdmin();
+
+      match /mensajes/{mensajeId} {
+        allow read: if estaAutenticado();
+        allow create: if estaAutenticado() && request.resource.data.autor_id == request.auth.uid;
+        allow update, delete: if estaAutenticado() &&
+          (resource.data.autor_id == request.auth.uid || esModeradorOAdmin());
+      }
+    }
+
+    match /encuentros/{id} {
+      allow read: if estaAutenticado();
+      allow write: if esModeradorOAdmin();
+    }
+
+    match /eventos/{id} {
+      allow read: if estaAutenticado();
+      allow write: if esModeradorOAdmin();
+    }
+
+    // La cola de turnos de curadores: cualquier miembro autenticado puede
+    // leerla y agregarse a ella al registrarse (es solo una lista de turnos,
+    // no datos sensibles). Otras configuraciones sí quedan restringidas a
+    // moderación/admin.
+    // La apariencia (colores/tipografía) es pública de lectura, para que
+    // el tema se vea igual incluso antes de iniciar sesión.
+    match /config/apariencia {
+      allow read: if true;
+      allow write: if esModeradorOAdmin();
+    }
+    match /config/textos {
+      allow read: if true;
+      allow write: if esModeradorOAdmin();
+    }
+    match /config/cola_curadores {
+      allow read: if estaAutenticado();
+      allow write: if estaAutenticado();
+    }
+    match /config/{doc} {
+      allow read: if estaAutenticado();
+      allow write: if esModeradorOAdmin();
+    }
+  }
+}
