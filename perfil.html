@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi perfil — Club de Lectura</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,500&family=Caveat:wght@500;600&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<script type="module" src="js/aplicar-tema.js"></script>
+<style>
+  .perfil-wrap{ max-width: 560px; margin: 0 auto; padding: 50px 24px 90px; }
+  .perfil-card{ background:#FBF9F4; border:1px solid var(--line); border-radius:4px; padding: 30px; margin-bottom: 24px; }
+  .avatar-actual{ display:flex; align-items:center; gap:16px; margin-bottom: 24px; }
+  .avatar-opciones{ display:flex; gap:14px; }
+  .avatar-opcion{ cursor:pointer; border-radius:50%; padding:2px; border:2px solid transparent; }
+  .avatar-opcion.selected{ border-color: var(--pencil); }
+  .campo{ margin-bottom: 16px; }
+  .campo label{ display:block; font-size: 0.85rem; color: var(--ink-soft); margin-bottom: 5px; }
+  .campo input{
+    width:100%; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 3px;
+    font-family: var(--body); font-size: 0.95rem; background: var(--paper);
+  }
+  .stat-row{ display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--line); font-size:0.92rem; }
+  .stat-row:last-child{ border-bottom:none; }
+  .estado{ font-size: 0.88rem; margin-top: 12px; min-height: 1.2em; }
+  .estado.ok{ color: var(--moss); }
+  .estado.error{ color: var(--pencil); }
+  .bloqueo{ text-align:center; padding: 80px 24px; color: var(--ink-soft); }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a href="index.html" class="brand">
+      <span class="brand-mark"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 16.5 C6.5 14.7 9.5 14.7 12 16.2 C14.5 14.7 17.5 14.7 21 16.5" fill="none" stroke="#21242B" stroke-width="1.3" stroke-linecap="round"/><path d="M3 16.5 L3 19.5 C6.5 17.7 9.5 17.7 12 19.2 L12 16.2" fill="none" stroke="#21242B" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/><path d="M21 16.5 L21 19.5 C17.5 17.7 14.5 17.7 12 19.2" fill="none" stroke="#21242B" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/><line x1="12" y1="9" x2="12" y2="14.7" stroke="#21242B" stroke-width="1" stroke-linecap="round"/><path d="M12 4.5 C13.3 6.2 13 7.6 12 8.6 C11 7.6 10.7 6.2 12 4.5 Z" fill="#AE3F28" stroke="none"/></svg></span>
+      <span class="brand-name">Club de Lectura</span>
+    </a>
+    <nav class="main-nav">
+      <a href="index.html">Inicio</a>
+    </nav>
+  </div>
+</header>
+
+<div id="zona-bloqueo" class="bloqueo" style="display:none;">
+  <p>Necesitas iniciar sesión para ver tu perfil.</p>
+  <a href="auth.html" class="btn btn-primary">Iniciar sesión</a>
+</div>
+
+<div id="zona-perfil" class="perfil-wrap" style="display:none;">
+  <p class="eyebrow">Tu espacio</p>
+  <h2 style="margin-bottom:24px;">Mi perfil</h2>
+
+  <div class="perfil-card">
+    <div class="avatar-actual">
+      <div id="avatar-grande"></div>
+      <div>
+        <div style="font-family:var(--display); font-size:1.2rem;" id="p-nombre-actual"></div>
+        <div style="font-size:0.85rem; color:var(--ink-soft);" id="p-rol-actual"></div>
+      </div>
+    </div>
+
+    <form id="form-perfil">
+      <div class="campo">
+        <label>Elige tu avatar</label>
+        <div class="avatar-opciones" id="opciones-avatar"></div>
+      </div>
+      <div class="campo">
+        <label>Nombre</label>
+        <input id="p-nombre" required>
+      </div>
+      <button type="submit" class="btn btn-primary">Guardar cambios</button>
+      <p class="estado" id="estado-perfil"></p>
+    </form>
+  </div>
+
+  <div class="perfil-card">
+    <h3 style="margin-bottom:14px;">Mi lugar en el club</h3>
+    <div class="stat-row"><span>Miembro desde</span><strong id="p-fecha-ingreso">—</strong></div>
+    <div class="stat-row"><span>Turno de curador</span><strong id="p-turno">—</strong></div>
+    <div class="stat-row"><span>Libro actual del club</span><strong id="p-libro-actual">—</strong></div>
+  </div>
+</div>
+
+<script type="module">
+  import { observarSesion, obtenerPerfil, actualizarMiPerfil } from "./js/auth.js";
+  import { AVATARES, avatarSVG } from "./js/avatares.js";
+  import { observarColaIds } from "./js/cola-curadores.js";
+  import { observarLibroActual } from "./js/libros.js";
+
+  let miUid = null;
+  let avatarSeleccionado = "neutral";
+
+  function pintarAvatarGrande() {
+    document.getElementById("avatar-grande").innerHTML = avatarSVG(avatarSeleccionado, 56);
+  }
+
+  document.getElementById("opciones-avatar").innerHTML = Object.keys(AVATARES).map(id => `
+    <div class="avatar-opcion" data-avatar="${id}" title="${AVATARES[id].nombre}">${avatarSVG(id, 40)}</div>
+  `).join("");
+
+  document.querySelectorAll("[data-avatar]").forEach(el => {
+    el.addEventListener("click", () => {
+      avatarSeleccionado = el.dataset.avatar;
+      document.querySelectorAll("[data-avatar]").forEach(o => o.classList.remove("selected"));
+      el.classList.add("selected");
+      pintarAvatarGrande();
+    });
+  });
+
+  observarSesion(async (user) => {
+    const bloqueo = document.getElementById("zona-bloqueo");
+    const perfilZona = document.getElementById("zona-perfil");
+
+    if (!user) {
+      bloqueo.style.display = "block";
+      perfilZona.style.display = "none";
+      return;
+    }
+
+    miUid = user.uid;
+    const perfil = await obtenerPerfil(user.uid);
+    bloqueo.style.display = "none";
+    perfilZona.style.display = "block";
+
+    avatarSeleccionado = perfil?.avatar || "neutral";
+    pintarAvatarGrande();
+    document.querySelector(`[data-avatar="${avatarSeleccionado}"]`)?.classList.add("selected");
+
+    document.getElementById("p-nombre-actual").textContent = perfil?.nombre || "";
+    document.getElementById("p-rol-actual").textContent =
+      perfil?.rol === "admin" ? "Administrador" : perfil?.rol === "moderador" ? "Moderador" : "Miembro";
+    document.getElementById("p-nombre").value = perfil?.nombre || "";
+
+    if (perfil?.fecha_ingreso?.toDate) {
+      document.getElementById("p-fecha-ingreso").textContent =
+        perfil.fecha_ingreso.toDate().toLocaleDateString("es-CO", { year: "numeric", month: "long" });
+    }
+
+    observarColaIds((ids) => {
+      const pos = ids.indexOf(user.uid);
+      document.getElementById("p-turno").textContent =
+        pos === -1 ? "No estás en la cola" : pos === 0 ? "¡Te toca elegir ahora!" : `Lugar ${pos + 1} en la cola`;
+    });
+
+    observarLibroActual((libro) => {
+      document.getElementById("p-libro-actual").textContent =
+        libro ? `${libro.titulo} — ${libro.autor}` : "Aún no hay un libro activo";
+    });
+  });
+
+  document.getElementById("form-perfil").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const estado = document.getElementById("estado-perfil");
+    estado.textContent = ""; estado.className = "estado";
+    try {
+      await actualizarMiPerfil(miUid, {
+        nombre: document.getElementById("p-nombre").value,
+        avatar: avatarSeleccionado,
+      });
+      document.getElementById("p-nombre-actual").textContent = document.getElementById("p-nombre").value;
+      estado.textContent = "Perfil actualizado.";
+      estado.classList.add("ok");
+    } catch (err) {
+      estado.textContent = "No se pudo guardar.";
+      estado.classList.add("error");
+    }
+  });
+</script>
+
+</body>
+</html>

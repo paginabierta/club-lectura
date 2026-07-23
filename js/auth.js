@@ -28,6 +28,7 @@ async function asegurarPerfil(user, nombreSugerido) {
     nombre: nombreSugerido || user.displayName || user.email,
     email: user.email,
     rol: "miembro",
+    avatar: "neutral",
     libros_leidos: [],
     fecha_ingreso: serverTimestamp(),
   });
@@ -59,6 +60,7 @@ export async function registrarLector({ nombre, email, password }) {
     nombre,
     email,
     rol: "miembro",           // miembro | moderador | admin
+    avatar: "neutral",
     libros_leidos: [],
     fecha_ingreso: serverTimestamp(),
   });
@@ -101,4 +103,9 @@ export function observarSesion(callback) {
 export async function obtenerPerfil(uid) {
   const snap = await getDoc(doc(db, "usuarios", uid));
   return snap.exists() ? snap.data() : null;
+}
+
+/** Actualiza el propio nombre y/o avatar. Cualquier miembro puede hacerlo sobre su propio perfil. */
+export async function actualizarMiPerfil(uid, datos) {
+  await setDoc(doc(db, "usuarios", uid), datos, { merge: true });
 }

@@ -64,6 +64,7 @@
     </a>
     <nav class="main-nav">
       <a href="index.html">Ver sitio</a>
+      <a href="perfil.html">Mi perfil</a>
     </nav>
   </div>
 </header>
@@ -306,8 +307,14 @@
             <div class="lista-item-sub">elegido por ${escaparHTML(l.curador_nombre)}${l.curador_lugar ? `, ${escaparHTML(l.curador_lugar)}` : ""}</div>
           </div>
           <div style="display:flex; align-items:center; gap:8px;">
-            <span class="badge ${l.estado === 'actual' ? 'actual' : ''}">${l.estado === 'actual' ? 'actual' : l.estado === 'leido' ? 'leído' : 'pendiente'}</span>
+            ${l.estado === 'actual' ? `<span class="badge actual">actual</span>` : ''}
             ${l.estado !== 'actual' ? `<button class="btn btn-ghost btn-sm" data-marcar="${l.id}">Marcar actual</button>` : ''}
+            ${l.estado !== 'actual' ? `
+              <select data-cambiar-estado="${l.id}" style="font-size:0.8rem;">
+                <option value="pendiente" ${l.estado === 'pendiente' ? 'selected' : ''}>pendiente</option>
+                <option value="leido" ${l.estado === 'leido' ? 'selected' : ''}>leído</option>
+              </select>
+            ` : ''}
             <button class="btn btn-ghost btn-sm" data-editar="${l.id}">Editar</button>
             <button class="btn btn-ghost btn-sm" data-eliminar="${l.id}">Eliminar</button>
           </div>
@@ -324,6 +331,9 @@
       });
       cont.querySelectorAll("[data-editar]").forEach(btn => {
         btn.addEventListener("click", () => entrarModoEdicion(btn.dataset.editar));
+      });
+      cont.querySelectorAll("[data-cambiar-estado]").forEach(sel => {
+        sel.addEventListener("change", () => actualizarLibro(sel.dataset.cambiarEstado, { estado: sel.value }));
       });
     });
   }

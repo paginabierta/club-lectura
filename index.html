@@ -24,6 +24,7 @@
       <a href="#calendario">Calendario</a>
       <a href="#archivo">Archivo</a>
       <a href="#encuentro" class="nav-cta">Próximo encuentro</a>
+      <a href="perfil.html">Mi perfil</a>
       <a href="admin.html" title="Panel de administración" style="opacity:0.55;">⚙</a>
     </nav>
   </div>
@@ -104,6 +105,22 @@
           <p id="t-como3-texto">Cada una o dos semanas, videollamada dentro del sitio. No hace falta salir a otra app: se entra y ya estamos todos ahí.</p>
         </article>
       </div>
+
+      <div id="zona-comunidad-miembros" style="margin-top:44px; display:none;">
+        <div class="fila-doble" style="display:grid; grid-template-columns: 1fr 1fr; gap:24px;">
+          <div>
+            <p class="page-label">Le toca elegir</p>
+            <p id="proximo-curador" style="font-family:var(--display); font-size:1.15rem;">—</p>
+          </div>
+          <div>
+            <p class="page-label">Miembros del club</p>
+            <div id="lista-miembros" style="display:flex; flex-wrap:wrap; gap:10px; margin-top:8px;"></div>
+          </div>
+        </div>
+      </div>
+      <p id="comunidad-login-prompt" style="margin-top:30px; font-size:0.88rem; color:var(--ink-soft);">
+        <a href="auth.html" style="color:var(--pencil); font-weight:600;">Inicia sesión</a> para ver quién sigue en el turno y quiénes son los demás miembros.
+      </p>
     </div>
   </section>
 
@@ -174,6 +191,10 @@
   import { observarLibroActual, observarLibros } from "./js/libros.js";
   import { observarEventos, observarProximoEncuentro } from "./js/eventos.js";
   import { observarTextos } from "./js/textos.js";
+  import { observarSesion, obtenerPerfil } from "./js/auth.js";
+  import { observarColaIds } from "./js/cola-curadores.js";
+  import { observarUsuarios } from "./js/usuarios-admin.js";
+  import { avatarSVG } from "./js/avatares.js";
 
   function escaparHTML(str) {
     const div = document.createElement("div");
@@ -277,6 +298,38 @@
     if (t.como3_texto) document.getElementById("t-como3-texto").textContent = t.como3_texto;
     if (t.cta_titulo) document.getElementById("t-cta-titulo").textContent = t.cta_titulo;
     if (t.cta_texto) document.getElementById("t-cta-texto").textContent = t.cta_texto;
+  });
+
+  // ----- Comunidad: miembros + próximo curador (solo si iniciaste sesión) -----
+  observarSesion((user) => {
+    const zona = document.getElementById("zona-comunidad-miembros");
+    const prompt = document.getElementById("comunidad-login-prompt");
+
+    if (!user) {
+      zona.style.display = "none";
+      prompt.style.display = "block";
+      return;
+    }
+    zona.style.display = "block";
+    prompt.style.display = "none";
+
+    observarUsuarios((usuarios) => {
+      document.getElementById("lista-miembros").innerHTML = usuarios.map(u => `
+        <div title="${escaparHTML(u.nombre || '')}" style="display:flex; align-items:center; gap:6px; background:var(--paper-dim); border-radius:20px; padding:4px 10px 4px 4px;">
+          ${avatarSVG(u.avatar || "neutral", 24)}
+          <span style="font-size:0.8rem;">${escaparHTML(u.nombre || '')}</span>
+        </div>
+      `).join("");
+    });
+
+    observarColaIds(async (ids) => {
+      if (ids.length === 0) {
+        document.getElementById("proximo-curador").textContent = "Aún no hay nadie en la cola";
+        return;
+      }
+      const perfil = await obtenerPerfil(ids[0]);
+      document.getElementById("proximo-curador").textContent = perfil?.nombre || "—";
+    });
   });
 </script>
 
