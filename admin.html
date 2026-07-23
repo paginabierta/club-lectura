@@ -91,7 +91,7 @@
 
     <div class="admin-card">
       <h3 id="titulo-form-libro">Agregar libro nuevo</h3>
-      <p class="hint">Se guarda en la biblioteca como "pendiente". Después lo marcas como "actual" cuando le toque su turno.</p>
+      <p class="hint">Se guarda en la biblioteca como "pendiente". El capítulo y la semana se configuran aparte, una vez lo marques como "actual".</p>
       <form id="form-nuevo-libro">
         <input type="hidden" id="nl-editando-id" value="">
         <div class="fila-doble">
@@ -106,18 +106,31 @@
           <label>URL de la portada (opcional — pega el enlace de una imagen ya subida a Drive, Imgur, etc.)</label>
           <input id="nl-imagen" placeholder="https://...">
         </div>
-        <div class="fila-doble">
-          <div class="campo"><label>Nº de capítulo actual</label><input id="nl-cap-num" required></div>
-          <div class="campo"><label>Título del capítulo</label><input id="nl-cap-titulo" required></div>
+        <div class="campo">
+          <label>Número total de capítulos (opcional — para calcular el % de avance solo)</label>
+          <input id="nl-cap-totales" type="number" min="1" placeholder="ej. 24">
         </div>
-        <div class="fila-doble">
-          <div class="campo"><label>Progreso del mes (%)</label><input id="nl-progreso" type="number" min="0" max="100" required></div>
-          <div class="campo"><label>Fecha de cierre del capítulo</label><input id="nl-fecha-cierre" placeholder="ej. 28 jul"></div>
-        </div>
-        <div class="campo"><label>Semana (ej. "Semana 2 de 4")</label><input id="nl-semana"></div>
         <button type="submit" class="btn btn-primary" id="btn-guardar-libro">Agregar a la biblioteca (como pendiente)</button>
         <button type="button" class="btn btn-ghost" id="btn-cancelar-edicion" style="display:none;">Cancelar edición</button>
         <p class="estado" id="estado-nuevo-libro"></p>
+      </form>
+    </div>
+
+    <div class="admin-card" id="tarjeta-seguimiento" style="display:none;">
+      <h3>Seguimiento del libro actual</h3>
+      <p class="hint" id="seguimiento-subtitulo">Actualiza esto cada semana — es lo que ve el club en la portada.</p>
+      <div id="seguimiento-calculo" style="background:var(--paper-dim); border-radius:4px; padding:14px 16px; margin-bottom:18px; font-size:0.88rem; display:none;"></div>
+      <form id="form-seguimiento">
+        <div class="fila-doble">
+          <div class="campo"><label>Nº de capítulo actual</label><input id="sg-cap-num" type="number" min="1" required></div>
+          <div class="campo"><label>Título del capítulo</label><input id="sg-cap-titulo" required></div>
+        </div>
+        <div class="fila-doble">
+          <div class="campo"><label>Semana (ej. "Semana 2 de 4")</label><input id="sg-semana" required></div>
+          <div class="campo"><label>Fecha de cierre del capítulo</label><input id="sg-fecha-cierre" placeholder="ej. 28 jul"></div>
+        </div>
+        <button type="submit" class="btn btn-primary">Guardar seguimiento</button>
+        <p class="estado" id="estado-seguimiento"></p>
       </form>
     </div>
 
@@ -226,7 +239,7 @@
 
 <script type="module">
   import { observarSesion, obtenerPerfil } from "./js/auth.js";
-  import { observarLibros, crearLibro, actualizarLibro, marcarComoActual, eliminarLibro } from "./js/libros.js";
+  import { observarLibros, observarLibroActual, crearLibro, actualizarLibro, marcarComoActual, eliminarLibro } from "./js/libros.js";
   import { observarEventos, crearEvento, eliminarEvento, observarProximoEncuentro, guardarProximoEncuentro } from "./js/eventos.js";
   import { observarUsuarios, cambiarRol } from "./js/usuarios-admin.js";
   import { observarApariencia, guardarApariencia, PALETAS, FUENTES } from "./js/apariencia.js";
@@ -282,6 +295,7 @@
     }
 
     iniciarLibros();
+    iniciarSeguimiento();
     iniciarCola();
     iniciarCalendario();
     if (miPerfil.rol === "admin") iniciarMiembros();
@@ -338,6 +352,67 @@
     });
   }
 
+  let capitulosTotalesActual = null;
+
+  function recalcularSeguimiento() {
+    const cont = document.getElementById("seguimiento-calculo");
+    const capActual = Number(document.getElementById("sg-cap-num").value);
+
+    if (!capitulosTotalesActual || !capActual) {
+      cont.style.display = "none";
+      return;
+    }
+    const porcentaje = Math.min(100, Math.round((capActual / capitulosTotalesActual) * 100));
+    const porSemana = Math.ceil(capitulosTotalesActual / 4);
+    cont.style.display = "block";
+    cont.innerHTML =
+      `<strong>${porcentaje}% del libro</strong> (capítulo ${capActual} de ${capitulosTotalesActual}) — ` +
+      `a un ritmo de ~${porSemana} capítulos por semana, para terminarlo en el mes.`;
+  }
+
+  document.getElementById("sg-cap-num").addEventListener("input", recalcularSeguimiento);
+
+  function iniciarSeguimiento() {
+    observarLibroActual((libro) => {
+      const tarjeta = document.getElementById("tarjeta-seguimiento");
+      if (!libro) {
+        tarjeta.style.display = "none";
+        return;
+      }
+      tarjeta.style.display = "block";
+      capitulosTotalesActual = libro.capitulos_totales || null;
+      document.getElementById("seguimiento-subtitulo").textContent = capitulosTotalesActual
+        ? `Actualiza esto cada semana para "${libro.titulo}" (${capitulosTotalesActual} capítulos en total) — es lo que ve el club en la portada.`
+        : `Actualiza esto cada semana para "${libro.titulo}" — es lo que ve el club en la portada. (Si le agregas el número total de capítulos arriba en "Editar", aquí calculo el % de avance solo.)`;
+      document.getElementById("sg-cap-num").value = libro.capitulo_numero || "";
+      document.getElementById("sg-cap-titulo").value = libro.capitulo_titulo || "";
+      document.getElementById("sg-semana").value = libro.semana || "";
+      document.getElementById("sg-fecha-cierre").value = libro.fecha_cierre || "";
+      recalcularSeguimiento();
+    });
+  }
+
+  document.getElementById("form-seguimiento").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const estado = document.getElementById("estado-seguimiento");
+    estado.textContent = ""; estado.className = "estado";
+    const actual = librosCache.find(l => l.estado === "actual");
+    if (!actual) return;
+    try {
+      await actualizarLibro(actual.id, {
+        capitulo_numero: document.getElementById("sg-cap-num").value,
+        capitulo_titulo: document.getElementById("sg-cap-titulo").value,
+        semana: document.getElementById("sg-semana").value,
+        fecha_cierre: document.getElementById("sg-fecha-cierre").value,
+      });
+      estado.textContent = "Seguimiento actualizado.";
+      estado.classList.add("ok");
+    } catch (err) {
+      estado.textContent = "No se pudo guardar.";
+      estado.classList.add("error");
+    }
+  });
+
   function entrarModoEdicion(id) {
     const libro = librosCache.find(l => l.id === id);
     if (!libro) return;
@@ -348,11 +423,7 @@
     document.getElementById("nl-curador-nombre").value = libro.curador_nombre || "";
     document.getElementById("nl-curador-lugar").value = libro.curador_lugar || "";
     document.getElementById("nl-imagen").value = libro.imagen_url || "";
-    document.getElementById("nl-cap-num").value = libro.capitulo_numero || "";
-    document.getElementById("nl-cap-titulo").value = libro.capitulo_titulo || "";
-    document.getElementById("nl-progreso").value = libro.progreso ?? "";
-    document.getElementById("nl-fecha-cierre").value = libro.fecha_cierre || "";
-    document.getElementById("nl-semana").value = libro.semana || "";
+    document.getElementById("nl-cap-totales").value = libro.capitulos_totales || "";
 
     document.getElementById("titulo-form-libro").textContent = `Editando: ${libro.titulo || ""}`;
     document.getElementById("btn-guardar-libro").textContent = "Guardar cambios";
@@ -381,11 +452,9 @@
       curador_nombre: document.getElementById("nl-curador-nombre").value,
       curador_lugar: document.getElementById("nl-curador-lugar").value,
       imagen_url: document.getElementById("nl-imagen").value,
-      capitulo_numero: document.getElementById("nl-cap-num").value,
-      capitulo_titulo: document.getElementById("nl-cap-titulo").value,
-      progreso: Number(document.getElementById("nl-progreso").value),
-      fecha_cierre: document.getElementById("nl-fecha-cierre").value,
-      semana: document.getElementById("nl-semana").value,
+      capitulos_totales: document.getElementById("nl-cap-totales").value
+        ? Number(document.getElementById("nl-cap-totales").value)
+        : null,
     };
     try {
       if (editandoId) {

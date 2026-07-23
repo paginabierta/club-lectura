@@ -61,10 +61,10 @@
         <div class="page page-right">
           <p class="page-label">Capítulo en curso</p>
           <h3 id="d-capitulo"></h3>
-          <div class="progress-track" role="img" aria-label="Progreso de lectura del mes">
+          <div class="progress-track" id="d-progreso-wrap" role="img" aria-label="Progreso de lectura del libro" style="display:none; margin-top:12px;">
             <div class="progress-fill" id="d-progreso" style="width:0%"></div>
           </div>
-          <p class="page-meta" id="d-meta"></p>
+          <p class="page-meta" id="d-meta" style="margin-top:10px;"></p>
           <a href="capitulo.html" class="thread-link">Entrar a la discusión del capítulo →</a>
         </div>
       </div>
@@ -221,7 +221,18 @@
       `elegido por <strong>${escaparHTML(libro.curador_nombre || "")}</strong>${libro.curador_lugar ? `, desde ${escaparHTML(libro.curador_lugar)}` : ""}`;
     document.getElementById("d-capitulo").textContent =
       `${libro.capitulo_numero || ""} · ${libro.capitulo_titulo || ""}`;
-    document.getElementById("d-progreso").style.width = `${libro.progreso || 0}%`;
+
+    // Porcentaje real, solo si se conoce el total de capítulos del libro
+    const wrapProgreso = document.getElementById("d-progreso-wrap");
+    if (libro.capitulos_totales && libro.capitulo_numero) {
+      const pct = Math.min(100, Math.round((Number(libro.capitulo_numero) / libro.capitulos_totales) * 100));
+      document.getElementById("d-progreso").style.width = `${pct}%`;
+      wrapProgreso.style.display = "block";
+      wrapProgreso.setAttribute("aria-label", `Progreso de lectura del libro: ${pct}%`);
+    } else {
+      wrapProgreso.style.display = "none";
+    }
+
     document.getElementById("d-meta").innerHTML =
       `${libro.semana || ""}${libro.semana && libro.fecha_cierre ? " · cierre de capítulo el " : ""}${libro.fecha_cierre ? `<strong>${escaparHTML(libro.fecha_cierre)}</strong>` : ""}`;
 
